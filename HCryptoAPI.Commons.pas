@@ -142,7 +142,9 @@ begin
     if Bytes[i] <> ByteToStrip then begin
       Max := i;
       Break;
-    end;
+    end
+    else
+      Max := i;
   end;
   for i := 0 to Max do
     Result.AppendByte(Bytes[i]);

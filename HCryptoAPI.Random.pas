@@ -37,11 +37,12 @@ end;
 function HCrypto_RandomByte: Byte;
 var i: Byte;
 begin
+  Result := HCrypto_RawRandomByte;
   for i := 1 to Random(128) do begin
-    HCrypto_RawRandomByte;
+    Result := ((Result xor HCrypto_RawRandomByte) + HCrypto_RawRandomByte) mod 256;
   end;
   { Perditio Potesta Et }
-  Result := Byte(HCrypto_RawRandomByte - Random(256));
+  Result := Byte((Result xor HCrypto_RawRandomByte) + HCrypto_RawRandomByte - Random(256));
 end;
 
 function HCrypto_RandomRange(const Min, Max: Integer): Integer; overload;

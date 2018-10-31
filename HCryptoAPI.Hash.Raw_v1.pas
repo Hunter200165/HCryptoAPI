@@ -33,7 +33,7 @@ begin
   if Len <= 0 then
     Exit;
   for i := 1 to HCrypto_HRv1_Rounds do begin
-    n := HCrypto_GetBytesSum(Result) mod LB;
+    n := HCrypto_GetBytesSum(Result) mod UInt64(LB);
     m := n div 2 - 1;
     HCrypto_ASM_ROLREGS(BytesLeft, n);
     HCrypto_ASM_RORREGS(BytesRight, m);

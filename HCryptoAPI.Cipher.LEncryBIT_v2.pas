@@ -36,7 +36,7 @@ type
     FMiddleKeyPosition: Integer;
     FLowKeyPosition: Integer;
     FBytesEncrypted: Int64;
-    procedure SetPosition(const Value: Int64);
+    procedure SetPosition(const Value: Int64); inline;
   protected
     property ExternalKeyPosition: Integer read FExternalKeyPosition write FExternalKeyPosition;
     property MiddleKeyPosition: Integer read FMiddleKeyPosition write FMiddleKeyPosition;
@@ -54,16 +54,17 @@ type
     property MiddleKeyLength: Int64 read FMiddleKeyLength;
     property LowKeyLength: Int64 read FLowKeyLength;
 
-    function EncryptByte(const AIn: Byte): Byte;
-    function DecryptByte(const EIn: Byte): Byte;
-    procedure EncryptBuffer(var Buffer: TBytesArray);
-    procedure DecryptBuffer(var Buffer: TBytesArray);
-    procedure EncryptStream(StrIn, StrOut: TStream);
-    procedure DecryptStream(StrIn, StrOut: TStream);
+    function EncryptByte(const AIn: Byte): Byte; inline;
+    function DecryptByte(const EIn: Byte): Byte; inline;
+    procedure EncryptBuffer(var Buffer: TBytesArray); inline;
+    procedure DecryptBuffer(var Buffer: TBytesArray); inline;
+    procedure EncryptStream(StrIn, StrOut: TStream); inline;
+    procedure DecryptStream(StrIn, StrOut: TStream); inline;
 
     procedure ResetMachine;
     procedure SetupKeys;
-    procedure NextRound;
+    procedure NextRound; inline;
+    procedure AddStep; inline;
     procedure CreateKeysOutOfPassword(const Password: TBytesArray; const Key: TBytesArray); overload;
     procedure CreateKeysOutOfPassword(const Password: TBytesArray); overload;
     procedure ExpandKeys;
@@ -83,6 +84,21 @@ begin
   MiddleKey := Copy(Buffer, HCrypto_LEncryBITv2_NEExternalKey, HCrypto_LEncryBITv2_NEMiddleKey);
   LowKey := Copy(Buffer, HCrypto_LEncryBITv2_NEExternalKey + HCrypto_LEncryBITv2_NEMiddleKey, HCrypto_LEncryBITv2_NELowKey);
   SetupKeys;
+end;
+
+procedure HCrypto_TLEncryBITv2.AddStep;
+begin
+  Inc(FLowKeyPosition);
+  if LowKeyPosition >= LowKeyLength then begin
+    LowKeyPosition := LowKeyPosition - LowKeyLength;
+    Inc(FMiddleKeyPosition);
+    if MiddleKeyPosition >= MiddleKeyLength then begin
+      MiddleKeyPosition := MiddleKeyPosition - MiddleKeyLength;
+      Inc(FExternalKeyLength);
+      if ExternalKeyPosition >= ExternalKeyLength then
+        ExternalKeyPosition := ExternalKeyPosition - ExternalKeyLength;
+    end;
+  end;
 end;
 
 procedure HCrypto_TLEncryBITv2.CreateKeysOutOfPassword(const Password: TBytesArray);
@@ -108,6 +124,15 @@ begin
   AEx := A xor E;
 
   DecTwo := EIn;
+  { New version }
+
+  HCrypto_ASM_ROLBYTE(DecTwo, (K xor A xor E) mod 8);
+  DecTwo := DecTwo xor E;
+  DecTwo := Byte(DecTwo - KEx);
+  DecTwo := DecTwo xor AEx;
+  DecTwo := Byte(DecTwo - E);
+
+  { Old version }
   HCrypto_ASM_ROLBYTE(DecTwo, E mod 8);
   DecThree := Byte(DecTwo - AEx);
   Result := DecThree xor KEx;
@@ -158,7 +183,12 @@ begin
 
   { Spinning low wheel by 1 }
   NextRound;
-  Result := EncThree;
+  { New version }
+  Result := (EncThree + E) mod 256;
+  Result := Result xor AEx;
+  Result := (Result + KEx) mod 256;
+  Result := Result xor E;
+  HCrypto_ASM_RORBYTE(Result, (K xor A xor E) mod 8);
 end;
 
 procedure HCrypto_TLEncryBITv2.EncryptStream(StrIn, StrOut: TStream);
@@ -204,7 +234,11 @@ end;
 
 procedure HCrypto_TLEncryBITv2.NextRound;
 begin
-  Position := Position + 1;
+//  FPosition := FPosition + 1;
+//  LowKeyPosition := (FPosition mod LowKeyLength);
+//  MiddleKeyPosition := (((FPosition div LowKeyLength)) mod MiddleKeyLength);
+//  ExternalKeyPosition := ((((FPosition div LowKeyLength) div MiddleKeyLength)) mod ExternalKeyLength);
+  AddStep;
   FBytesEncrypted := FBytesEncrypted + 1;
 end;
 

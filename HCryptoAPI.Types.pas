@@ -65,6 +65,8 @@ type
     function ToBytes_ASCII: TBytesArray;
     function FromBytes(const Bytes: TBytesArray): string;
     function FromBytes_ASCII(const Bytes: TBytesArray): String;
+
+    function Fmt(const FormatOptions: array of const): String;
   end;
 
   TStringsArrayHelper = record helper for TStringsArray
@@ -157,6 +159,11 @@ begin
 end;
 
 { TStringCryptoHelper }
+
+function TStringCryptoHelper.Fmt(const FormatOptions: array of const): String;
+begin
+  Result := Format(Self, FormatOptions);
+end;
 
 function TStringCryptoHelper.FromBytes(const Bytes: TBytesArray): string;
 begin

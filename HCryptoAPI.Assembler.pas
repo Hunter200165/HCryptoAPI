@@ -11,8 +11,8 @@ procedure HCrypto_ASM_ROLBYTES(var Buffer: TBytesArray; Amount: Cardinal);
 procedure HCrypto_ASM_RORBYTES(var Buffer: TBytesArray; Amount: Cardinal);
 procedure HCrypto_ASM_ROLREGS(var Arr: TBytesArray; Bits: Cardinal = 1);
 procedure HCrypto_ASM_RORREGS(var Arr: TBytesArray; Bits: Cardinal = 1);
-procedure HCrypto_ASM_RORBYTE(var B: Byte; n: cardinal = 1);
-procedure HCrypto_ASM_ROLBYTE(var B: Byte; n: cardinal = 1);
+procedure HCrypto_ASM_RORBYTE(var B: Byte; n: byte = 1);
+procedure HCrypto_ASM_ROLBYTE(var B: Byte; n: byte = 1);
 
 implementation
 
@@ -170,10 +170,10 @@ begin
   end;
 end;
 
-procedure HCrypto_ASM_RORBYTE(var B: Byte; n: cardinal = 1);
-var G, Count: Byte;
-begin
-  Count := n mod 8;
+procedure HCrypto_ASM_RORBYTE(var B: Byte; n: byte = 1);
+//var G, Count: Byte;
+asm
+  {Count := n mod 8;
   g := b;
   asm
     xor eax, eax;
@@ -183,11 +183,17 @@ begin
     ror al, cl;
     mov g, al;
   end;
-  b := g;
+  b := g;}
+  Mov CL, n;
+  And CL, 7; { Mod 8 }
+  Mov CH, [B];
+  Ror CH, CL;
+  Mov [B], CH;
+
 end;
 
-procedure HCrypto_ASM_ROLBYTE(var B: Byte; n: cardinal = 1);
-var G, Count: Byte;
+procedure HCrypto_ASM_ROLBYTE(var B: Byte; n: byte = 1);
+{var G, Count: Byte;
 begin
   Count := n mod 8;
   g := b;
@@ -199,7 +205,16 @@ begin
     rol al, cl;
     mov g, al;
   end;
-  b := g;
+  b := g;}
+asm
+
+  Mov CL, N;
+  And CL, 7;
+//  Xor ECX, ECX;
+  Mov CH, [B];
+  Rol CH, CL;
+  Mov [B], CH;
+
 end;
 
 end.
